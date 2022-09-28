@@ -6,31 +6,32 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-// implementation info
-#define N_LINES 10
-#define N_COLUMNS 50
+// Implementation info
+#define NUM_LINES 10
+#define LINE_SIZE 50
 
-// generic protocol info
+// Generic protocol info
 #define OPCODE_LEN 2
-#define CONTENT_LEN 50
-#define REQ_LEN OPCODE_LEN+N_COLUMNS
+#define LINE_SPECIFIER_LEN 2
+#define REQ_LEN OPCODE_LEN+LINE_SPECIFIER_LEN+LINE_SIZE
 
-// server operations definition
+// Server operations definition
 #define EXIT "00"
 #define ADD "01"
 #define GET "10"
 #define GETALL "11"
 
-// returns a printable string representation of the editor as received by the
+// Returns a printable string representation of the editor as received by the
 // local client
-char* printable_editor(char **editor) {
+char* printable_editor(char **editor)
+{
   char* printable_string;
 
-  for(int i = 0; i < N_LINES; i++) {
+  for (int i = 0; i < NUM_LINES; i++) {
     printable_string += i + '0';
 
-    for (int j = 0; i < N_COLUMNS; j++) {
-      printable_string += editor[N_LINES][N_COLUMNS];
+    for (int j = 0; i < LINE_SIZE; j++) {
+      printable_string += editor[NUM_LINES][LINE_SIZE];
     }
 
     printable_string += '\n';
@@ -40,7 +41,7 @@ char* printable_editor(char **editor) {
 }
 
 
-// socket instantiation and execution
+// Socket instantiation and execution
 int main()
 {
   int sockfd;
@@ -50,7 +51,9 @@ int main()
   char *req;
   char *res;
 
-  char local_editor[N_LINES][N_COLUMNS];
+  char local_editor[NUM_LINES][LINE_SIZE];
+
+  // TODO: make client actually run
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
