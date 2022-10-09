@@ -138,9 +138,13 @@ struct Request_Struct parse_req(char *raw_request)
   return req;
 }
 
-char* exit_op()
+char* exit_op(int client_sockfd)
 {
-  return "--------------------successful exit-------------------\n";
+  if (close(client_sockfd) == -1) {
+    perror("Error on close: ");
+    // exit(4); 
+  }
+  return "--------------------successful exit--------------------";
 }
 
 
@@ -196,7 +200,6 @@ int main()
   int server_len, client_len;
   struct sockaddr_in server_address;
   struct sockaddr_in client_address;
-  char raw_req[REQ_LEN];
 
   // Mutex initialization
   for (int i = 0; i < NUM_LINES; i++) pthread_mutex_init(&locks[i], NULL);
@@ -217,10 +220,16 @@ int main()
 	listen(server_sockfd, 5);
 
 	while(1) {
-		printf("server waiting\n");
+		printf("\nServer waiting...\n");
+    char raw_req[REQ_LEN];
+
 		client_len = sizeof(client_address);
 		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
-    read(client_sockfd, &raw_req, REQ_LEN);
+  
+    if(read(client_sockfd, &raw_req, REQ_LEN) == -1) {
+      perror("Error on read: ");
+      // exit(3);
+    }
 
     printf("Parsing request\n");
 
@@ -232,7 +241,7 @@ int main()
     // Application logic
     if (compare_opcode(req.opcode, EXIT) == 0) {
       printf("Exit response\n");
-      strcpy(res, exit_op());
+      strcpy(res, exit_op(client_sockfd));
     } else if (compare_opcode(req.opcode, ADD) == 0) {
       printf("Add response\n");
       strcpy(res, add_line(req.line, req.content));
@@ -249,7 +258,9 @@ int main()
 
     for (int i = 0; i < REQ_LEN; i++) printf("%c", res[i]);
     printf("\n");
-		write(client_sockfd, &res, REQ_LEN);
-		close(client_sockfd); // TODO: move this to exit_op()
+		if (write(client_sockfd, &res, REQ_LEN) == -1) {
+      perror("Error on write: ");
+      // exit(2);
+    }
 	}
 }

@@ -1,29 +1,7 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
+#include "client.h"
 
-// Implementation info
-#define NUM_LINES 256
-#define LINE_SIZE 50
 
-// Generic protocol info
-#define OPCODE_LEN 2
-#define LINE_SPECIFIER_LEN 2
-#define REQ_LEN OPCODE_LEN+LINE_SPECIFIER_LEN+LINE_SIZE
 
-// Server operations definition
-#define EXIT "00"
-#define ADD "01"
-#define GET "10"
-#define GETALL "11"
-
-// Returns a printable string representation of the editor as received by the
-// local client
 char* printable_editor(char **editor)
 {
   char* printable_string;
@@ -42,22 +20,12 @@ char* printable_editor(char **editor)
 }
 
 
-// Socket instantiation and execution
-int main()
+void client_connect()
 {
-  int sockfd;
-  int len;
-  struct sockaddr_in address;
-  int result;
-  char req[REQ_LEN];
-  char res[REQ_LEN];
-
-  char local_editor[NUM_LINES][LINE_SIZE];
-
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   address.sin_family = AF_INET;
-  address.sin_addr.s_addr = inet_addr("200.135.76.223");
+  address.sin_addr.s_addr = inet_addr(INET_ADDR);
 
   //address.sin_addr.s_addr = htonl(INADDR_ANY);
   address.sin_port = htons(9734);
@@ -68,11 +36,73 @@ int main()
 		perror("oops: client1");
 		exit(1);
   }
-  strcpy(req, "011bHello, World!000000000000000000000000000000000000");
-	write(sockfd, &req, REQ_LEN);
-	sleep(10);
-	read(sockfd, &res, REQ_LEN);
-  for (int i = 0; i < REQ_LEN; i++) printf("%c", res[i]);
-	close(sockfd);
+}
+
+
+void client_sleep()
+{
+  sleep(CLIENT_SLEEP_TIME);
+}
+
+
+void run(size_t n_reqs, char reqs[n_reqs][REQ_LEN])
+{
+  client_connect();
+  for (int req_counter = 0; req_counter < n_reqs; req_counter++) {
+    strcpy(req, reqs[req_counter]);
+    printf("request: ");
+    for (int i = 0; i < REQ_LEN; i++){
+      printf("%c", req[i]);
+    }
+    printf("\n");
+
+    if (write(sockfd, &req, REQ_LEN) == -1) {
+      perror("Error on write: ");
+      // exit(2);
+    }
+
+    client_sleep();
+    if (read(sockfd, &res, REQ_LEN) == -1) {
+      perror("Error on read: ");
+      // exit(3);
+    }
+
+    printf("response: ");
+    for (int i = 0; i < REQ_LEN; i++){
+      printf("%c", res[i]);
+    }
+    printf("\n\n");
+
+
+
+    // TODO: this should be outside the loop, but currently placing it outside
+    // breaks the application after the second request
+    if (close(sockfd) == -1) {
+      perror("Error on close: ");
+      // exit(4);
+    }
+  }
+
 	exit(0);
+}
+
+
+int main()
+{
+  size_t n_reqs = 11;
+  char reqs[n_reqs][REQ_LEN];
+
+  strcpy(reqs[0], "0100Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[1], "0101Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[2], "0102Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[3], "0103Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[4], "0104Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[5], "0105Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[6], "0106Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[7], "0107Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[8], "0108Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[9], "0109Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[10], "00000000000000000000000000000000000000000000000000000");
+
+  run(n_reqs, reqs);
 }
