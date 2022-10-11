@@ -39,4 +39,4 @@ struct Request_Struct {
 pthread_mutex_t locks[NUM_LINES];
 
 // Our main char matrix
-char editor[NUM_LINES][LINE_SIZE];
+char* editor[NUM_LINES];

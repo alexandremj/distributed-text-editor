@@ -115,8 +115,11 @@ char* add_line(int line, char *content)
   }
 
   pthread_mutex_lock(&locks[line]);
-  for (int i = 0; i < LINE_SIZE; i++)
-    strcpy(editor[line], content);
+  printf("\nLine %d before: %s\n", line, editor[line]);
+  editor[line] = content;
+  printf("\nLine %d after: %s\n", line, editor[line]);
+  // for (int i = 0; i < LINE_SIZE; i++)
+  //   strcpy(editor[line], content);
   pthread_mutex_unlock(&locks[line]);
 
   return "--------------------successful write--------------------";
@@ -214,9 +217,7 @@ int main()
 
   // editor initialization
   for (int i = 0; i < NUM_LINES; i++) {
-    for (int j = 0; j < LINE_SIZE; j++) {
-      editor[i][j] = 'a';
-    }
+    editor[i] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
   }
   
   server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
