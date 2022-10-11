@@ -1,7 +1,5 @@
 #include "client.h"
 
-
-
 char* printable_editor(char **editor)
 {
   char* printable_string;
@@ -86,13 +84,11 @@ void run(size_t n_reqs, char reqs[n_reqs][REQ_LEN])
 	exit(0);
 }
 
-
-int main()
-{
+void run_test() {
   size_t n_reqs = 11;
   char reqs[n_reqs][REQ_LEN];
 
-  strcpy(reqs[0], "0100Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[0], "1100Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[1], "0101Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[2], "0102Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[3], "0103Hello, World!000000000000000000000000000000000000");
@@ -105,4 +101,58 @@ int main()
   strcpy(reqs[10], "00000000000000000000000000000000000000000000000000000");
 
   run(n_reqs, reqs);
+}
+
+void op_add_line()
+{
+  printf("Adding line\n");
+}
+
+void op_get_line()
+{
+  printf("getting line X\n");
+}
+
+void op_get_all()
+{
+  printf("Getting ALL\n");
+}
+
+char* parse_opcode(char input)
+{
+  int int_input = char_to_int(input);
+  if (int_input > 3) return "XX";
+  char* bin = int_to_bin(int_input);
+  return ( strlen(bin) == 1 ? concat("0", bin) : bin);
+}
+
+void handle_op(char* opcode)
+{
+  if (!strcmp(opcode, "XX")) return;
+  if (!strcmp(opcode, ADD)) op_add_line();
+  if (!strcmp(opcode, GET)) op_get_line();
+  if (!strcmp(opcode, GETALL)) op_get_all();
+}
+
+void client_cli()
+{
+  char user_input;
+  do {
+    user_input = '-';
+    printf(CLI_STRING);
+    scanf("%s", &user_input);
+
+    char* parsed_input = parse_opcode(user_input);
+    printf("User input: %s\n", parsed_input);
+
+    handle_op(parsed_input);
+  } while (user_input != '0');
+}
+
+int main()
+{
+  // run_test();
+  //client_connect();
+  client_cli();
+  //exit(0)
 }

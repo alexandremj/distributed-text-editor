@@ -1,4 +1,4 @@
 run:
-	gcc server.c -o server
-	gcc client.c -o client
-	./server 
+	gcc server.c -o server.run
+	gcc client.c -o client.run
+	./server.run

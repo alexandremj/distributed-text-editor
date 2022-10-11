@@ -23,7 +23,7 @@
 #define GET "10"
 #define GETALL "11"
 
-#define INET_ADDR "200.135.76.223"
+#define INET_ADDR "127.0.0.1"
 
 int sockfd;
 int len;
@@ -46,3 +46,42 @@ void client_sleep();
 
 // main client application logic
 void run(size_t n_reqs, char reqs[n_reqs][REQ_LEN]);
+
+char* parse_opcode(char input);
+void handle_op(char* opcode);
+void client_cli();
+
+#define CLI_STRING "\n\
+Client CLI - Please type a command: \n\n\
+  0 - exit\n\
+  1 - add_line \n\
+  2 - get_line \n\
+  3 - get_all_lines \n\
+"
+
+// These functions are here because I think it's too basic to be on code
+// Other languages have this by standard
+unsigned int int_to_int(unsigned int k) {
+  return (k == 0 || k == 1 ? k : ((k % 2) + 10 * int_to_int(k / 2)));
+}
+
+char* int_to_str(int x)
+{
+  int length = snprintf( NULL, 0, "%d", x );
+  char* str = malloc( length + 1 );
+  snprintf( str, length + 1, "%d", x );
+  return str;
+}
+
+char* int_to_bin(int x) { return int_to_str(int_to_int(x)); }
+
+int char_to_int(char c) { return (int) c - 48; }
+
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
