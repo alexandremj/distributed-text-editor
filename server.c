@@ -232,7 +232,7 @@ int main()
 		printf("\nServer waiting...\n");
 		client_len = sizeof(client_address);
 		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
-    printf("CLIENT %d STARTINGGGGGGGGGGGGGGGGGGGGGGGGGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", client_sockfd);
+    printf("CLIENT %d STARTING", client_sockfd);
     pthread_create(&threads[connected_clients], NULL, run_client, &client_sockfd);
     connected_clients++;
 	}
