@@ -210,7 +210,7 @@ int main()
   struct sockaddr_in server_address;
   struct sockaddr_in client_address;
 
-  pthread_t threads[MAX_CLIENT_NUM];
+  pthread_t threads[MAX_CLIENT_NUM+10];
   int connected_clients = 0;
   // Mutex initialization
   for (int i = 0; i < NUM_LINES; i++) pthread_mutex_init(&locks[i], NULL);
