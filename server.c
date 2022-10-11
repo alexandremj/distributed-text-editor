@@ -8,6 +8,8 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "server.h"
+
 // Implementation info
 #define NUM_LINES 256
 #define LINE_SIZE 50
@@ -138,13 +140,12 @@ struct Request_Struct parse_req(char *raw_request)
   return req;
 }
 
-char* exit_op(int client_sockfd)
+void exit_op(int client_sockfd)
 {
   if (close(client_sockfd) == -1) {
     perror("Error on close: ");
-    // exit(4); 
   }
-  return "--------------------successful exit--------------------";
+  return;
 }
 
 
@@ -193,6 +194,52 @@ int compare_opcode(char *opcode, char *operation)
   return 1;
 }
 
+void* run_client(void* arg)
+{
+  int client_sockfd = *(int *)arg;
+
+  char raw_req[REQ_LEN];
+
+  printf("\nAAAAAAAAAAAAAAAAAA teste %d\n", client_sockfd);
+  while(1) {
+    if(read(client_sockfd, &raw_req, REQ_LEN) == -1) {
+      perror("Error on read: ");
+    }
+
+    printf("Parsing request\n");
+
+    struct Request_Struct req = parse_req(raw_req);
+    char res[REQ_LEN] = "";
+
+    printf("\nParsing response\n");
+
+    // Application logic
+    if (compare_opcode(req.opcode, EXIT) == 0) {
+      printf("Exit response\n");
+		  write(client_sockfd, &"--------------------successful exit--------------------", REQ_LEN);
+      exit_op(client_sockfd);
+      return NULL;
+    } else if (compare_opcode(req.opcode, ADD) == 0) {
+      printf("Add response\n");
+      strcpy(res, add_line(req.line, req.content));
+    } else if (compare_opcode(req.opcode, GET) == 0) {
+      printf("Get response\n");
+      strcpy(res, get_line(req.line));
+    } else if (compare_opcode(req.opcode, GETALL) == 0) {
+      printf("Get All response\n");
+      strcpy(res, getall_op());
+    } else {
+      printf("Operation not found, exiting...-----------------------\n");
+      strcpy(res, "Operation not found, exiting...----------------------");
+    }
+
+    for (int i = 0; i < REQ_LEN; i++) printf("%c", res[i]);
+    printf("\n");
+		if (write(client_sockfd, &res, REQ_LEN) == -1) {
+      perror("Error on write: ");
+    }
+  }
+}
 
 int main()
 {
@@ -201,6 +248,8 @@ int main()
   struct sockaddr_in server_address;
   struct sockaddr_in client_address;
 
+  pthread_t threads[MAX_CLIENT_NUM];
+  int connected_clients = 0;
   // Mutex initialization
   for (int i = 0; i < NUM_LINES; i++) pthread_mutex_init(&locks[i], NULL);
 
@@ -221,46 +270,10 @@ int main()
 
 	while(1) {
 		printf("\nServer waiting...\n");
-    char raw_req[REQ_LEN];
-
 		client_len = sizeof(client_address);
 		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
-  
-    if(read(client_sockfd, &raw_req, REQ_LEN) == -1) {
-      perror("Error on read: ");
-      // exit(3);
-    }
 
-    printf("Parsing request\n");
-
-    struct Request_Struct req = parse_req(raw_req);
-    char res[REQ_LEN];
-
-    printf("\nParsing response\n");
-
-    // Application logic
-    if (compare_opcode(req.opcode, EXIT) == 0) {
-      printf("Exit response\n");
-      strcpy(res, exit_op(client_sockfd));
-    } else if (compare_opcode(req.opcode, ADD) == 0) {
-      printf("Add response\n");
-      strcpy(res, add_line(req.line, req.content));
-    } else if (compare_opcode(req.opcode, GET) == 0) {
-      printf("Get response\n");
-      strcpy(res, get_line(req.line));
-    } else if (compare_opcode(req.opcode, GETALL) == 0) {
-      printf("Get All response\n");
-      strcpy(res, getall_op());
-    } else {
-      printf("Operation not found, exiting...-----------------------\n");
-      strcpy(res, "Operation not found, exiting...----------------------");
-    }
-
-    for (int i = 0; i < REQ_LEN; i++) printf("%c", res[i]);
-    printf("\n");
-		if (write(client_sockfd, &res, REQ_LEN) == -1) {
-      perror("Error on write: ");
-      // exit(2);
-    }
+    pthread_create(&threads[connected_clients], NULL, run_client, &client_sockfd);
+    connected_clients++;
 	}
 }

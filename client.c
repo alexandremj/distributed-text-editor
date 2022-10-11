@@ -54,16 +54,20 @@ void run(size_t n_reqs, char reqs[n_reqs][REQ_LEN])
     }
     printf("\n");
 
+    printf("1write\n");
     if (write(sockfd, &req, REQ_LEN) == -1) {
       perror("Error on write: ");
       // exit(2);
     }
+    printf("2write\n");
 
     client_sleep();
+    printf("1read\n");
     if (read(sockfd, &res, REQ_LEN) == -1) {
       perror("Error on read: ");
       // exit(3);
     }
+    printf("2read\n");
 
     printf("response: ");
     for (int i = 0; i < REQ_LEN; i++){
@@ -75,10 +79,10 @@ void run(size_t n_reqs, char reqs[n_reqs][REQ_LEN])
 
     // TODO: this should be outside the loop, but currently placing it outside
     // breaks the application after the second request
-    if (close(sockfd) == -1) {
-      perror("Error on close: ");
-      // exit(4);
-    }
+    // if (close(sockfd) == -1) {
+    //   perror("Error on close: ");
+    //   // exit(4);
+    // }
   }
 
 	exit(0);
@@ -88,7 +92,7 @@ void run_test() {
   size_t n_reqs = 11;
   char reqs[n_reqs][REQ_LEN];
 
-  strcpy(reqs[0], "1100Hello, World!000000000000000000000000000000000000");
+  strcpy(reqs[0], "0100Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[1], "0101Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[2], "0102Hello, World!000000000000000000000000000000000000");
   strcpy(reqs[3], "0103Hello, World!000000000000000000000000000000000000");
@@ -151,8 +155,8 @@ void client_cli()
 
 int main()
 {
-  // run_test();
+  run_test();
   //client_connect();
-  client_cli();
+  // client_cli();
   //exit(0)
 }

@@ -1,0 +1,1 @@
+#define MAX_CLIENT_NUM 5
