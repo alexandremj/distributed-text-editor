@@ -1,45 +1,4 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-
 #include "server.h"
-
-// Implementation info
-#define NUM_LINES 256
-#define LINE_SIZE 50
-
-// Generic protocol info
-#define OPCODE_LEN 2
-#define LINE_SPECIFIER_LEN 2
-#define REQ_LEN OPCODE_LEN+LINE_SPECIFIER_LEN+LINE_SIZE
-
-// Server operations definition
-#define EXIT "00"
-#define ADD "01"
-#define GET "10"
-#define GETALL "11"
-
-// Struct that defines the requests to our server
-struct Request_Struct {
-  char opcode[OPCODE_LEN];
-  char line_hex[LINE_SPECIFIER_LEN];
-  int line;
-  char content[LINE_SIZE];
-};
-
-
-// We need one mutex for each line in the solution
-pthread_mutex_t locks[NUM_LINES];
-
-// Our main char matrix
-char editor[NUM_LINES][LINE_SIZE];
-
 
 int get_hex_value(char hex) 
 {
@@ -200,7 +159,7 @@ void* run_client(void* arg)
 
   char raw_req[REQ_LEN];
 
-  printf("\nAAAAAAAAAAAAAAAAAA teste %d\n", client_sockfd);
+  printf("\n Running client %d\n", client_sockfd);
   while(1) {
     if(read(client_sockfd, &raw_req, REQ_LEN) == -1) {
       perror("Error on read: ");
@@ -272,8 +231,12 @@ int main()
 		printf("\nServer waiting...\n");
 		client_len = sizeof(client_address);
 		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
-
+    printf("CLIENT %d STARTINGGGGGGGGGGGGGGGGGGGGGGGGGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", client_sockfd);
     pthread_create(&threads[connected_clients], NULL, run_client, &client_sockfd);
     connected_clients++;
 	}
+
+  for (int i = 0; i < MAX_CLIENT_NUM; i++) {
+      pthread_join(threads[i], NULL);
+  }
 }
