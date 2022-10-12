@@ -1,43 +1,4 @@
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-
-// Implementation info
-#define NUM_LINES 256
-#define LINE_SIZE 50
-
-// Generic protocol info
-#define OPCODE_LEN 2
-#define LINE_SPECIFIER_LEN 2
-#define REQ_LEN OPCODE_LEN+LINE_SPECIFIER_LEN+LINE_SIZE
-
-// Server operations definition
-#define EXIT "00"
-#define ADD "01"
-#define GET "10"
-#define GETALL "11"
-
-// Struct that defines the requests to our server
-struct Request_Struct {
-  char opcode[OPCODE_LEN];
-  char line_hex[LINE_SPECIFIER_LEN];
-  int line;
-  char content[LINE_SIZE];
-};
-
-
-// We need one mutex for each line in the solution
-pthread_mutex_t locks[NUM_LINES];
-
-// Our main char matrix
-char editor[NUM_LINES][LINE_SIZE];
-
+#include "server.h"
 
 int get_hex_value(char hex) 
 {
@@ -138,13 +99,12 @@ struct Request_Struct parse_req(char *raw_request)
   return req;
 }
 
-char* exit_op(int client_sockfd)
+void exit_op(int client_sockfd)
 {
   if (close(client_sockfd) == -1) {
     perror("Error on close: ");
-    // exit(4); 
   }
-  return "--------------------successful exit--------------------";
+  return;
 }
 
 
@@ -155,8 +115,11 @@ char* add_line(int line, char *content)
   }
 
   pthread_mutex_lock(&locks[line]);
-  for (int i = 0; i < LINE_SIZE; i++)
-    strcpy(editor[line], content);
+  printf("\nLine %d before: %s\n", line, editor[line]);
+  editor[line] = content;
+  printf("\nLine %d after: %s\n", line, editor[line]);
+  // for (int i = 0; i < LINE_SIZE; i++)
+  //   strcpy(editor[line], content);
   pthread_mutex_unlock(&locks[line]);
 
   return "--------------------successful write--------------------";
@@ -193,55 +156,31 @@ int compare_opcode(char *opcode, char *operation)
   return 1;
 }
 
-
-int main()
+void* run_client(void* arg)
 {
-  int server_sockfd, client_sockfd;
-  int server_len, client_len;
-  struct sockaddr_in server_address;
-  struct sockaddr_in client_address;
+  int client_sockfd = *(int *)arg;
 
-  // Mutex initialization
-  for (int i = 0; i < NUM_LINES; i++) pthread_mutex_init(&locks[i], NULL);
+  char raw_req[REQ_LEN];
 
-  // editor initialization
-  for (int i = 0; i < NUM_LINES; i++) {
-    for (int j = 0; j < LINE_SIZE; j++) {
-      editor[i][j] = 'a';
-    }
-  }
-  
-  server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  server_address.sin_family = AF_INET;
-  server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-  server_address.sin_port = htons(9734);
-  server_len = sizeof(server_address);
-  bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
-	listen(server_sockfd, 5);
-
-	while(1) {
-		printf("\nServer waiting...\n");
-    char raw_req[REQ_LEN];
-
-		client_len = sizeof(client_address);
-		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
-  
+  printf("\n Running client %d\n", client_sockfd);
+  while(1) {
     if(read(client_sockfd, &raw_req, REQ_LEN) == -1) {
       perror("Error on read: ");
-      // exit(3);
     }
 
     printf("Parsing request\n");
 
     struct Request_Struct req = parse_req(raw_req);
-    char res[REQ_LEN];
+    char res[REQ_LEN] = "";
 
     printf("\nParsing response\n");
 
     // Application logic
     if (compare_opcode(req.opcode, EXIT) == 0) {
       printf("Exit response\n");
-      strcpy(res, exit_op(client_sockfd));
+		  write(client_sockfd, &"--------------------successful exit--------------------", REQ_LEN);
+      exit_op(client_sockfd);
+      return NULL;
     } else if (compare_opcode(req.opcode, ADD) == 0) {
       printf("Add response\n");
       strcpy(res, add_line(req.line, req.content));
@@ -260,7 +199,45 @@ int main()
     printf("\n");
 		if (write(client_sockfd, &res, REQ_LEN) == -1) {
       perror("Error on write: ");
-      // exit(2);
     }
+  }
+}
+
+int main()
+{
+  int server_sockfd, client_sockfd;
+  int server_len, client_len;
+  struct sockaddr_in server_address;
+  struct sockaddr_in client_address;
+
+  pthread_t threads[MAX_CLIENT_NUM+10];
+  int connected_clients = 0;
+  // Mutex initialization
+  for (int i = 0; i < NUM_LINES; i++) pthread_mutex_init(&locks[i], NULL);
+
+  // editor initialization
+  for (int i = 0; i < NUM_LINES; i++) {
+    editor[i] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  }
+  
+  server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  server_address.sin_family = AF_INET;
+  server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+  server_address.sin_port = htons(9734);
+  server_len = sizeof(server_address);
+  bind(server_sockfd, (struct sockaddr *)&server_address, server_len);
+	listen(server_sockfd, 5);
+
+	while(1) {
+		printf("\nServer waiting...\n");
+		client_len = sizeof(client_address);
+		client_sockfd = accept(server_sockfd,(struct sockaddr *)&client_address, &client_len);
+    printf("CLIENT %d STARTING", client_sockfd);
+    pthread_create(&threads[connected_clients], NULL, run_client, &client_sockfd);
+    connected_clients++;
 	}
+
+  for (int i = 0; i < MAX_CLIENT_NUM; i++) {
+      pthread_join(threads[i], NULL);
+  }
 }
